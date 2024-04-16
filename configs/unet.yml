@@ -30,4 +30,4 @@ staircase: True
 epochs: 30000
 batch_size: 128
 shuffle_seed: 29310
-verbose: 0
+verbose: 1
