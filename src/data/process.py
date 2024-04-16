@@ -24,7 +24,7 @@ def load_img_masks(input_path, target_path):
     return input_img, target_img
 
 def get_dataset(batch_size):
-    path_init = "../../dataset/testdata"
+    path_init = "../../dataset"
     img_size = (512,512)
 
     raw_paths = []
@@ -42,14 +42,25 @@ def get_dataset(batch_size):
 
     dataset = tf_data.Dataset.from_tensor_slices((raw_paths, seg_paths))
     dataset = dataset.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
-    dataset = dataset.batch(batch_size)
-    return dataset
 
+    total_size = len(list(dataset.as_numpy_iterator()))
+    train_size = int(0.9 * total_size)
+
+    train_dataset, val_test_dataset = keras.utils.split_dataset(dataset, left_size = 0.8, shuffle = True)
+    val_dataset, test_dataset = keras.utils.split_dataset(val_test_dataset, left_size = 0.5, shuffle = True)
+
+    train_dataset = train_dataset.batch(batch_size)
+    val_dataset = train_dataset.batch(batch_size)
+    test_dataset = train_dataset.batch(batch_size)
+
+    return train_dataset, val_dataset, test_dataset
+
+# train_dataset, val_dataset, test_dataset = get_dataset(5)
 
 # Display pairs of vectorized images
-# for images, masks in dataset.take(1):
-#     image = images[4]
-#     mask = masks[4]
+# for images, masks in train_dataset.take(1):
+#     image = images[3]
+#     mask = masks[3]
 #     break
 # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 # print(image.numpy().shape)
