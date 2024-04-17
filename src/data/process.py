@@ -7,7 +7,7 @@ from PIL import ImageOps
 import matplotlib.pyplot as plt
 
 import keras
-import numpy as np
+import tensorflow as tf
 from tensorflow import data as tf_data
 from tensorflow import image as tf_image
 from tensorflow import io as tf_io
@@ -24,7 +24,7 @@ def load_img_masks(input_path, target_path):
     return input_img, target_img
 
 def get_dataset(batch_size):
-    path_init = "../../dataset"
+    path_init = "dataset/small"
     img_size = (512,512)
 
     raw_paths = []
@@ -42,6 +42,7 @@ def get_dataset(batch_size):
 
     dataset = tf_data.Dataset.from_tensor_slices((raw_paths, seg_paths))
     dataset = dataset.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
+    # dataset = dataset.map(_remove_unnecessary_dimension, num_parallel_calls=tf_data.AUTOTUNE)
 
     total_size = len(list(dataset.as_numpy_iterator()))
     train_size = int(0.9 * total_size)
@@ -49,19 +50,31 @@ def get_dataset(batch_size):
     train_dataset, val_test_dataset = keras.utils.split_dataset(dataset, left_size = 0.8, shuffle = True)
     val_dataset, test_dataset = keras.utils.split_dataset(val_test_dataset, left_size = 0.5, shuffle = True)
 
-    train_dataset = train_dataset.batch(batch_size)
-    val_dataset = train_dataset.batch(batch_size)
-    test_dataset = train_dataset.batch(batch_size)
+    train_dataset = train_dataset
+    val_dataset = val_dataset
+    test_dataset = test_dataset
+
+    # for images, masks in train_dataset.take(1):
+    #     image = images[0]
+    #     mask = masks[0]
+
+    #     print(image.shape)
+    #     print(mask.shape)
+    #     break
 
     return train_dataset, val_dataset, test_dataset
+
+get_dataset(5)
+# def _remove_unnecessary_dimension(image, label):
+#     print(image.shape)
+#     image = tf.reshape(image, [image.shape[0], image.shape[2], image.shape[3], image.shape[4]])
+#     label = tf.reshape(label, [label.shape[0], label.shape[2], label.shape[3], label.shape[4]])
+#     return image, label
 
 # train_dataset, val_dataset, test_dataset = get_dataset(5)
 
 # Display pairs of vectorized images
-# for images, masks in train_dataset.take(1):
-#     image = images[3]
-#     mask = masks[3]
-#     break
+
 # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 # print(image.numpy().shape)
 # ax[0].imshow(image.numpy())
