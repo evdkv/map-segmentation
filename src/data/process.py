@@ -1,31 +1,59 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-from PIL import Image
-from keras.utils import load_img
-from PIL import ImageOps
-import matplotlib.pyplot as plt
-
 import keras
 import tensorflow as tf
 from tensorflow import data as tf_data
-from tensorflow import image as tf_image
-from tensorflow import io as tf_io
+# from tensorflow import image as tf_image
+# from tensorflow import io as tf_io
 
-def load_img_masks(input_path, target_path):
-    input_img = tf_io.read_file(input_path)
-    input_img = tf_io.decode_png(input_img, channels=3)
-    input_img = tf_image.convert_image_dtype(input_img, "float32")
+import numpy as np
+from PIL import Image
 
-    target_img = tf_io.read_file(target_path)
-    target_img = tf_io.decode_png(target_img, channels=3)
-    target_img = tf_image.convert_image_dtype(target_img, "uint8")
+COLOR_TO_CLASS = {
+    (17, 141, 215): 0,
+    (225, 227, 155): 1, 
+    (127, 173, 123): 2,
+    (185, 122, 87): 3,
+    (230, 200, 181): 4,
+    (150, 150, 150): 5,
+    (193, 190, 175): 6
+}
 
-    return input_img, target_img
+def load_img_masks(x_img, y_img):
+    x_img = tf.image.convert_image_dtype(x_img, dtype=tf.float32)
+    x_img = tf.convert_to_tensor(x_img, dtype=tf.float32)
+    x_img = x_img / 255.0 # Normalize the images to [0, 1]
+    #x_img = tf_io.decode_png(x_img, channels=3)
+    #x_img = tf_image.convert_image_dtype(x_img, "float32")
+    
+    return x_img, y_img
+
+
+def seg_image_to_onehot(seg_image):
+
+    integer_labels = np.zeros((512, 512), dtype=np.uint8)
+
+    #target_img = tf_io.read_file(target_path)
+    #target_img = tf_io.decode_png(target_img, channels=3)
+    #target_img = tf_image.convert_image_dtype(target_img, "uint8")
+
+    red_channel = seg_image[:, :, 0]  # Slice the first channel (red)
+    green_channel = seg_image[:, :, 1]  # Slice the second channel (green)
+    blue_channel = seg_image[:, :, 2] # Slice the third channel (blue)
+
+    for i in range(512):
+        for j in range(512):
+            pixel = (red_channel[i, j], green_channel[i, j], blue_channel[i, j])
+            integer_labels[i][j] = COLOR_TO_CLASS.get(pixel, 0)
+
+    target_img = tf.convert_to_tensor(integer_labels, dtype=tf.uint8)
+    target_img = tf.one_hot(target_img, 7)
+
+    return target_img
 
 def get_dataset(batch_size):
-    path_init = "dataset/small"
-    img_size = (512,512)
+    path_init = "dataset"
 
     raw_paths = []
     seg_paths = []
@@ -40,12 +68,25 @@ def get_dataset(batch_size):
             seg_paths.append(os.path.join(path_init, fname))
     seg_paths.sort()
 
-    dataset = tf_data.Dataset.from_tensor_slices((raw_paths, seg_paths))
+    print("reading raw images")
+
+    raw_images = [np.array(Image.open(path)) for path in raw_paths]
+    seg_images = [np.array(Image.open(path)) for path in seg_paths]
+
+
+    print("converting seg images to onehot")
+
+    for i in range(len(seg_images)):
+        seg_images[i] = seg_image_to_onehot(seg_images[i])
+
+    print("creating dataset")
+
+    dataset = tf_data.Dataset.from_tensor_slices((raw_images, seg_images))
     dataset = dataset.map(load_img_masks, num_parallel_calls=tf_data.AUTOTUNE)
     # dataset = dataset.map(_remove_unnecessary_dimension, num_parallel_calls=tf_data.AUTOTUNE)
 
-    total_size = len(list(dataset.as_numpy_iterator()))
-    train_size = int(0.9 * total_size)
+    #total_size = len(list(dataset.as_numpy_iterator()))
+    #train_size = int(0.9 * total_size)
 
     train_dataset, val_test_dataset = keras.utils.split_dataset(dataset, left_size = 0.8, shuffle = True)
     val_dataset, test_dataset = keras.utils.split_dataset(val_test_dataset, left_size = 0.5, shuffle = True)
@@ -60,11 +101,13 @@ def get_dataset(batch_size):
 
     #     print(image.shape)
     #     print(mask.shape)
+
+    #     print(mask)
     #     break
 
     return train_dataset, val_dataset, test_dataset
 
-get_dataset(5)
+#get_dataset(5)
 # def _remove_unnecessary_dimension(image, label):
 #     print(image.shape)
 #     image = tf.reshape(image, [image.shape[0], image.shape[2], image.shape[3], image.shape[4]])

@@ -19,8 +19,8 @@ def main():
     # Assuming 'data' is your data
     #data = np.squeeze(data, axis=1)
 
-    model = Unet(num_classes=3).build()
-    model.compile(optimizer=Adam(), loss='binary_crossentropy', metrics=['accuracy'])
+    model = Unet(num_classes=7).build()
+    model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
 
     output = model.predict(val_dataset)
     print("Output shape: ", output.shape)
