@@ -1,3 +1,10 @@
+'''
+File containing utility functions for the data pipeline to preprocess the dataset
+and generate the .tfrecords files
+
+Authors: Ginny Zhang, Win Aung, Tolya Evdokimov, Sophie Zhao
+'''
+
 import tensorflow as tf
 
 FEATURE_DESCRIPTION = {
@@ -44,4 +51,6 @@ def preprocess_dataset(ds, ds_size):
     parsed = ds.map(_parse_dataset)
     decoded = parsed.map(_decode_example)
     prep = decoded.map(_prepare_ds)
-    return prep.shuffle(buffer_size=ds_size, seed=19384).batch(128, num_parallel_calls=AUTOTUNE).prefetch(AUTOTUNE)
+
+    # Shuffle and batch the dataset (uncomment the shuffle for training)
+    return prep.batch(128, num_parallel_calls=AUTOTUNE).prefetch(AUTOTUNE)#shuffle(buffer_size=ds_size, seed=19384)

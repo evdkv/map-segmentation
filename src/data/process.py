@@ -1,3 +1,10 @@
+'''
+The file containing the data processing script 
+to generate the .tfrecords files
+
+Authors: Ginny Zhang, Win Aung
+'''
+
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -5,6 +12,7 @@ import cv2
 from PIL import Image
 from utils import serialize_example
 
+# Declare the color to class mapping
 COLOR_TO_CLASS = {
     (17, 141, 215): 0,
     (225, 227, 155): 1, 
@@ -16,6 +24,15 @@ COLOR_TO_CLASS = {
 }
 
 def seg_image_to_onehot(seg_image):
+    '''
+    Converts the segmentation image to one-hot encoding
+
+    Parameters:
+        seg_image (np.array): The segmentation image
+    
+    Returns:
+        target_img: The one-hot encoded segmentation image
+    '''
 
     integer_labels = np.zeros((128, 128), dtype=np.uint8)
 
@@ -34,6 +51,9 @@ def seg_image_to_onehot(seg_image):
     return target_img
 
 def get_dataset():
+    '''
+    Generates the .tfrecords files for the dataset
+    '''
 
     train_writer = tf.io.TFRecordWriter('train.tfrecords')
     test_writer = tf.io.TFRecordWriter('test.tfrecords')
