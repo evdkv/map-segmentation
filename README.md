@@ -21,6 +21,7 @@ and is a generic U-Net implementation in Keras.
  - Analyses: Run each individual notebook in notebooks/
 
 ## Project Tree (data and weights are excluded)
+```bash
 .
 ├── README.md
 ├── configs
@@ -57,3 +58,4 @@ and is a generic U-Net implementation in Keras.
     │   ├── fcn8.py
     │   └── unet.py
     └── train.py
+```
